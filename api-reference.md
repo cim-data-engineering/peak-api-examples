@@ -109,6 +109,29 @@ comfort score responses (`ThermalComfortSiteScore.unit` / `unit_id`).
 
 `scripts/get_sites.py` does the cursor loop.
 
+## Thermal comfort: site scores (`GET /thermalcomfort/{metric}/site-scores`, core)
+
+Verified against the live endpoint, 2026-10-14: site 603, HTTP 200, 13 monthly rows.
+
+- **`{metric}` is `temperature` or `relative-humidity`.** Zone-level data is under  
+the same prefix: `/thermalcomfort/{metric}/zone-history` and `/zone-count`.
+- **Required:** `site_ids`, `start_date`, `end_date`. Dates are `YYYY-MM-DD`.  
+`site_ids` repeats the key, as on `/sites`: `site_ids=411&site_ids=412`.
+- **Optional:** `aggregate_period` (`day`, `month`, `year` or `all`), `limit`,  
+`start_index`, `order_by`, `no_count`, `outside_temperature`,  
+`outside_temperature_source`.
+- **Response:** `data.site_scores[]`, one row per site per period, with `site_id`,  
+`stale`, `date`, `thermal_comfort_score`, `unit`, `unit_id`,  
+`average_outside_temperature`, `outside_temperature_source`.
+  - `date` is the first day of the period.
+  - `thermal_comfort_score` is 0 to 1, and can be `null`.
+  - `unit`, `unit_id`, `average_outside_temperature` and `outside_temperature_source`  
+  were absent from every row for site 603. Do not assume they are present.
+- **`response_metadata.record_count` appears only when `limit` is sent.**
+- **Paging is by offset:** add `limit` to `start_index` for the next page. Only the  
+first page was tested.
+- There is no GraphQL query for comfort scores. Use this endpoint.
+
 ## History export: the chain from names to samples
 
 Verified against the live endpoints, 2026-08-21, building

@@ -132,6 +132,39 @@ the same prefix: `/thermalcomfort/{metric}/zone-history` and `/zone-count`.
 first page was tested.
 - There is no GraphQL query for comfort scores. Use this endpoint.
 
+## Meter data: energy rollups (`GET /meters/meterdata/history`, core)
+
+Verified against the live endpoint, 2026-10-15, with a CIM service-account token.  
+Tenant tokens were not tested.
+
+- **One call returns rollups for many meters.** `/meterdata/history` is an alias.  
+Repeat `nmi_ids` once per meter: `nmi_ids=10657&nmi_ids=15437`.
+- **`data_type=active_net`** is the value behind the platform's daily and monthly  
+meter energy (`meter_energy_daily` / `meter_energy_monthly`). The other values are  
+`reactive_net`, `active_import`, `active_export`, `reactive_import`,  
+`reactive_export` and `demand`.
+- **`aggregate_period` is `P1M` (or `1 mon`) for monthly, `P1D` for daily.**  
+`monthly`, `month` and `1 months` return HTTP 400.
+- **Send `prefer_rollup=true`.** It is not in the swagger.
+- **`local_start_ts` / `local_end_ts` are local times with no zone**  
+(`2026-07-01T00:00:00`). The end is exclusive and must fall on a period boundary,  
+or the API answers 400 `not aligned on aggregate period boundary`.
+- **With `aggregate_period` set, `ts` is the start of the local period.** Without  
+it, rows keep the stored label, which is the end of the bin: a July bill comes  
+back dated 1 August.
+- **Rows hold `ts`, `data` and `quality_breakdown` only.** There is no day or  
+interval count, so a partial month looks the same as a full one.
+- **`P1D` fails on a meter that only has monthly data.** If the meter's interval in  
+the catalogue is `P1M`, the API answers 400  
+`Meter data intervals must be submultiples of the specified aggregate period P1D`.
+- **`GET /meters/meterdata/ranges` gives the data range per stream.** Pass  
+`nmi_ids_stream_ids=<nmi_id>-<stream_id>`, repeated, and each stream comes back  
+with `start_ts` and `end_ts`.
+- There is no GraphQL query for meter rollups. Use this endpoint.
+
+Monthly `active_net` values matched `meter_energy_monthly` for nmi 10657 and 15437,  
+July to September 2026.
+
 ## History export: the chain from names to samples
 
 Verified against the live endpoints, 2026-08-21, building

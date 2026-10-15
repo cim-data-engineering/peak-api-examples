@@ -89,7 +89,7 @@ def api_get(access_token: str, path: str, params: dict) -> dict:
 def get_client_id(access_token: str, client_name: str) -> int | None:
     """Step 2: find a client's id from its name, or None if there is no match.
 
-    A site record carries client *ids* only (`clients: [19]`), never names, and
+    A site record carries client *ids* only (`clients: [<client id>]`), never names, and
     the ids differ per customer. The users service is the only place names live:
     GET /users/clients returns client_id, client_name, is_active and customer_id.
 

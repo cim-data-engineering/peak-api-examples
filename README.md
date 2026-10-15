@@ -122,7 +122,7 @@ timezone**. `--out` names the file; without it the name is built from the
 arguments. One row per timestamp, one column per equipment and point:
 
 ```
-Timestamp (America/Chicago),"AHU-23.S, Unit Return Air Temperature (Fahrenheit), °F, Building, 4 to 37"
+Timestamp (America/Chicago),"AHU-1, Unit Return Air Temperature (Fahrenheit), °F, Building, 4 to 37"
 2026-08-19 00:00,74.228
 2026-08-19 00:15,74.299995
 ```
@@ -130,7 +130,7 @@ Timestamp (America/Chicago),"AHU-23.S, Unit Return Air Temperature (Fahrenheit),
 Progress goes to stderr, so the run above says what it found:
 
 ```
-site 411 100 Example Street (America/Chicago)
+site <site id> 100 Example Street (America/Chicago)
 31 favourite(s) across 23 Air Handling Units -- lookups took 11.6s
 15 minute grid, 2026-08-19 to 2026-08-20 in 1 window(s)
   batch 1/1: 2,976 samples in 1.7s
@@ -180,7 +180,7 @@ uv run scripts\get_history.py --site "100 Example Street" --type "Chiller" --met
 | `token exchange failed: HTTP 400 … invalid_grant` | the offline token was revoked or its session went idle — run `get_token.py` again |
 | `no OFFLINE_TOKEN_ACCESS in .env` | step 2 — the `.env` file is missing or the line is misspelt |
 | `GET /sites failed: HTTP 401` | the token is valid but the account lacks permission for the endpoint |
-| `GET /sites failed: HTTP 504` | the API gateway timed out — the unfiltered query is slow; add a filter such as `params={"site_ids": [411]}` |
+| `GET /sites failed: HTTP 504` | the API gateway timed out — the unfiltered query is slow; add a filter such as `params={"site_ids": [<site id>]}` |
 | `GET /history failed: HTTP 414` | too many `fav_ids` in one URL — lower `FAV_BATCH` in `get_history.py` (100 is proven, 500 fails) |
 | `GET /history failed: HTTP 504` | too many rows in one request — lower `WINDOW_DAYS`. Don't retry a 504; it will time out again |
 | `no active site named …` / `no equipment type named …` | these filters are exact matches, and type names are inconsistently pluralised — `Air Handling Units` but `Chiller` |

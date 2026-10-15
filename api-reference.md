@@ -16,23 +16,22 @@ current schema for any endpoint.
 ## Clients: id ↔ name
 
 The core data API (and the GraphQL `sites` query) only ever expose client **ids** —  
-a site carries `clients: [19]`, never a name. To match a client by **name** (e.g.  
+a site carries `clients: [<client id>]`, never a name. To match a client by **name** (e.g.  
 excluding the bucket that inactive buildings are parked in), resolve names via the  
 **users** service, which is the only endpoint that returns them:
 
 ```
 GET /users/clients?first=0&max=500        # all clients: {client_id, client_name, is_active, customer_id}
-GET /users/clients?customer_id=1          # scope to a customer
-GET /users/clients?client_name=Abacus     # by name
+GET /users/clients?customer_id=<customer id> # scope to a customer
+GET /users/clients?client_name=<client name> # by name
 ```
 
 Verified 2026-08-20:
 
-- **`client_name` matches the whole name, case-insensitively.** `Abacus` and
-  `abacus` both return the one client; the prefix `Abac` returns none. Filter
-  client-side for partial names.
-- `response_metadata.record_count` is the total (319 clients visible to the account
-  tested), and `first` / `max` page the list.
+- **`client_name` matches the whole name, case-insensitively.** `Example Client`
+  and `example client` both return the one client; the prefix `Example` returns
+  none. Filter client-side for partial names.
+- `response_metadata.record_count` is the total, and `first` / `max` page the list.
 - A name that does not exist returns HTTP 200 with an empty `clients` array, not a
   404 — so "no match" and "no permission" look the same.
 
@@ -95,8 +94,8 @@ unless `limit` is also sent.
 - **`cursor` is keyset paging on `site_id`, exclusive** — pass the last id you saw.  
 It is rejected with HTTP 400 unless `order_by_site_id=true` is also set:  
 `Cannot query sites using cursor when order_by_site_id is not set to true.`
-- **Array filters repeat the key**: `site_ids=411&site_ids=412`. The bracket form  
-`site_ids[]=411` is **silently ignored** — the response is every site, which  
+- **Array filters repeat the key**: `site_ids=<site id 1>&site_ids=<site id 2>`. The bracket form  
+`site_ids[]=<site id>` is **silently ignored** — the response is every site, which  
 looks like a filter that matched everything. Comma-joined values 400.
 - **`site_name` is an exact match**, not a substring search. Filter client-side  
 for partial names.
@@ -111,12 +110,12 @@ comfort score responses (`ThermalComfortSiteScore.unit` / `unit_id`).
 
 ## Thermal comfort: site scores (`GET /thermalcomfort/{metric}/site-scores`, core)
 
-Verified against the live endpoint, 2026-10-14: site 603, HTTP 200, 13 monthly rows.
+Verified against the live endpoint, 2026-10-14: one site, HTTP 200, 13 monthly rows.
 
 - **`{metric}` is `temperature` or `relative-humidity`.** Zone-level data is under  
 the same prefix: `/thermalcomfort/{metric}/zone-history` and `/zone-count`.
 - **Required:** `site_ids`, `start_date`, `end_date`. Dates are `YYYY-MM-DD`.  
-`site_ids` repeats the key, as on `/sites`: `site_ids=411&site_ids=412`.
+`site_ids` repeats the key, as on `/sites`: `site_ids=<site id 1>&site_ids=<site id 2>`.
 - **Optional:** `aggregate_period` (`day`, `month`, `year` or `all`), `limit`,  
 `start_index`, `order_by`, `no_count`, `outside_temperature`,  
 `outside_temperature_source`.
@@ -126,7 +125,7 @@ the same prefix: `/thermalcomfort/{metric}/zone-history` and `/zone-count`.
   - `date` is the first day of the period.
   - `thermal_comfort_score` is 0 to 1, and can be `null`.
   - `unit`, `unit_id`, `average_outside_temperature` and `outside_temperature_source`  
-  were absent from every row for site 603. Do not assume they are present.
+  were absent from every row for the site tested. Do not assume they are present.
 - **`response_metadata.record_count` appears only when `limit` is sent.**
 - **Paging is by offset:** add `limit` to `start_index` for the next page. Only the  
 first page was tested.
@@ -134,15 +133,14 @@ first page was tested.
 
 ## Meter data: energy rollups (`GET /meters/meterdata/history`, core)
 
-Verified against the live endpoint, 2026-10-15, with a CIM service-account token.  
-Tenant tokens were not tested.
+Verified against the live endpoint, 2026-10-15, with a platform-operator service-account token.  
+Customer tokens were not tested.
 
 - **One call returns rollups for many meters.** `/meterdata/history` is an alias.  
-Repeat `nmi_ids` once per meter: `nmi_ids=10657&nmi_ids=15437`.
+Repeat `nmi_ids` once per meter: `nmi_ids=<meter id 1>&nmi_ids=<meter id 2>`.
 - **`data_type=active_net`** is the value behind the platform's daily and monthly  
-meter energy (`meter_energy_daily` / `meter_energy_monthly`). The other values are  
-`reactive_net`, `active_import`, `active_export`, `reactive_import`,  
-`reactive_export` and `demand`.
+meter energy. The other values are `reactive_net`, `active_import`,  
+`active_export`, `reactive_import`, `reactive_export` and `demand`.
 - **`aggregate_period` is `P1M` (or `1 mon`) for monthly, `P1D` for daily.**  
 `monthly`, `month` and `1 months` return HTTP 400.
 - **Send `prefer_rollup=true`.** It is not in the swagger.
@@ -162,9 +160,6 @@ the catalogue is `P1M`, the API answers 400
 with `start_ts` and `end_ts`.
 - There is no GraphQL query for meter rollups. Use this endpoint.
 
-Monthly `active_net` values matched `meter_energy_monthly` for nmi 10657 and 15437,  
-July to September 2026.
-
 ## History export: the chain from names to samples
 
 Verified against the live endpoints, 2026-08-21, building
@@ -179,7 +174,7 @@ This is not the `/sites` behaviour above — the other collection endpoints
 - **`limit` alone is ignored.** Asked for 10 of 1,061 metadata records, got all
   1,061.
 - **`start_index` alone caps the page at 25**, whatever `limit` said.
-- **Neither returns 25 records and no total.** `GET /zones?site_id=411` answered
+- **Neither returns 25 records and no total.** `GET /zones?site_id=<site id>` answered
   with 25 of 885 zones, `response_metadata: null`, HTTP 200. The failure mode is
   a short list that looks complete — it showed up as blank level names in a CSV
   header, not as an error.
@@ -307,15 +302,14 @@ proves nothing about what was applied.
 
 - **"Sharing is admin-tier" was too strong.** The precise rule observed: a
   *tenant* service account's metadata PUTs no-op entirely, even on its own
-  records — but a **customer-1 (CIM) account can edit CIM-owned metadata,
-  `shared` included** (verified: flipped `shared` false→true on two CIM
-  records via PUT). Ownership (`customer_id`) stays DB-only for every token
+  records — but a **platform-operator account can edit metadata it owns, `shared`
+  included**. Ownership (`customer_id`) stays DB-only for every token
   tried.
 - **A tenant cannot point a favourite at unshared metadata it cannot see** —
   the target resolves as not-found and the upsert is rejected. Share the
   target first.
 - **`GET /favourites` synthesizes an `identifier` for BACnet favourites**
-  ("binary-input 861") that is NOT stored on the row (`identifier` is NULL in
+  ("binary-input <instance>") that is NOT stored on the row (`identifier` is NULL in
   the database when `device_object_id` is set). Echoing it back into
   `POST /favourites` trips identifier validation on some sites
   ("not a valid Haystack identifier"). Send only the favourite's real anchor:

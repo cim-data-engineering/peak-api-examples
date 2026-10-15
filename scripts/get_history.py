@@ -139,7 +139,7 @@ def paged_get(access_token: str, path: str, params: dict, collection: str) -> li
       * `limit` alone is ignored -- asking for 10 of 1,061 metadata records
         returned all 1,061.
       * `start_index` alone caps the page at 25 whatever you asked for.
-      * neither returns 25 records and no total -- GET /zones?site_id=411 gave 25
+      * neither returns 25 records and no total -- GET /zones?site_id=<site id> gave 25
         of 885 zones with nothing to say it was short. That is the dangerous one:
         the export still runs and the level names come out blank.
 
@@ -257,7 +257,7 @@ def build_zone_labels(access_token: str, site_id: int) -> dict[int, tuple[str, s
 
     Three calls, because the names live one table away from the zone: a zone
     holds a level_id and a zone_name_id, and those resolve to the text. All three
-    endpoints need paging -- site 411 has 885 zones, 84 zone names and 64 levels.
+    endpoints need paging -- one site has 885 zones, 84 zone names and 64 levels.
     """
     zones = paged_get(access_token, "/zones", {"site_id": site_id}, "zones")
     zone_names = paged_get(access_token, "/zone_names", {"site_id": site_id}, "zone_names")

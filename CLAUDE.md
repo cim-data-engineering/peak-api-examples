@@ -1,4 +1,4 @@
-Status: core — customer-facing; maintained and in use; a source of truth.
+Status: customer — written for customers using the API; maintained and in use; a source of truth.
 
 # CLAUDE.md
 

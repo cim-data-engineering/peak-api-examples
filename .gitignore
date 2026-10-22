@@ -1,5 +1,6 @@
 .env*
 !.env.example
+!.envrc
 .venv/
 .peak/
 __pycache__/
@@ -7,6 +8,7 @@ __pycache__/
 .ruff_cache/
 docs/
 *.csv
+.DS_Store
 
 # Orca worktree config (local only)
 .worktreeinclude

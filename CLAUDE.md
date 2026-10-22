@@ -1,3 +1,5 @@
+Status: core — customer-facing; maintained and in use; a source of truth.
+
 # CLAUDE.md
 
 A tutorial for Python beginners at a customer, who extend it themselves: standalone

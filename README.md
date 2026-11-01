@@ -186,3 +186,22 @@ uv run scripts\get_history.py --site "100 Example Street" --type "Chiller" --met
 | `no active site named …` / `no equipment type named …` | these filters are exact matches, and type names are inconsistently pluralised — `Air Handling Units` but `Chiller` |
 | `warning: no point named …` | the API drops metadata names it doesn't recognise instead of failing — check the spelling against `GET /metadata` |
 | a level or zone in a CSV header is blank | a paged read came back short — `limit` and `start_index` must be sent together or the API silently returns 25 records |
+
+## Developing the examples
+
+These are beginner-facing examples: each script is standalone and can be read from
+top to bottom. [api-reference.md](api-reference.md) records endpoint observations and
+links to the API schema. Examples use placeholder customer data; credentials belong
+in the ignored `.env` file described above.
+
+```bash
+uv run ruff check .
+uv run ruff format .
+```
+
+## Development layout
+
+Maintained utilities belong in `scripts/`, documentation in `docs/`, and one-off
+experiments in `experiments/<name>/scripts/`. Store generated outputs and caches in
+ignored `experiments/<name>/data/` or `data/` directories. Existing tracked inputs
+and fixtures retain their current locations.

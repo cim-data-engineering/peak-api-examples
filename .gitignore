@@ -6,10 +6,11 @@
 __pycache__/
 *.pyc
 .ruff_cache/
-docs/
 *.csv
 .DS_Store
 
 # Orca worktree config (local only)
 .worktreeinclude
 orca.yaml
+/experiments/*/data/
+/data/

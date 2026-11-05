@@ -165,7 +165,7 @@ with `start_ts` and `end_ts`.
 Verified 2026-11-05 with the platform-operator service-account token: reads on CIM
 lifts, and writes on one demo supply fan, which was left with no properties. Customer
 tokens were not tested, so read the properties back after any write. Points marked
-*(source)* come from the platform's `aced` source (cim-data-engineering), not a live
+*(source)* come from the platform's `aced` source (Bitbucket `cimenviro/aced`), not a live
 call.
 
 Properties are typed key/value pairs per equipment, added in May 2026 for elevators.

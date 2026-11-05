@@ -162,10 +162,11 @@ with `start_ts` and `end_ts`.
 
 ## Equipment properties (`/equipment/{equipment_id}/properties`, core)
 
-Verified 2026-11-05 with the CIM service account: reads on CIM lifts, and writes on
-one demo supply fan, which was left with no properties. Partner-tenant tokens were
-not tested, so read the properties back after any write. Points marked *(source)*
-come from the platform source, not a live call.
+Verified 2026-11-05 with the platform-operator service-account token: reads on CIM
+lifts, and writes on one demo supply fan, which was left with no properties. Customer
+tokens were not tested, so read the properties back after any write. Points marked
+*(source)* come from the platform's `aced` source (cim-data-engineering), not a live
+call.
 
 Properties are typed key/value pairs per equipment, added in May 2026 for elevators.
 On 2026-11-05 the only name in use was `elevator_group_name`. Any string is
@@ -178,30 +179,39 @@ accepted as a name, and there is no web UI and no audit trail.
   `/collectors/{collector_id}/equipment`, and their single-item forms) include
   properties only with `select_properties=true`. Without it the key is absent.
   GraphQL has `Equipment.equipment_properties { property_name value }`. Nothing
-  filters equipment by property, so read in bulk and filter client-side rather
-  than calling the sub-resource once per unit.
-- **`value`** is a JSON string, number or boolean, and comes back as the same type
-  (`"True"` stays a string). A list is a 400.
-- **`PATCH` is the only safe write.** It upserts the properties sent and keeps the
-  rest; `value: null` deletes that one. Duplicate names in one request are a 400.
-- **`POST` replaces every property**, despite being labelled "create": after three
-  PATCHed properties, a POST with one left only that one. `PUT` also replaces all,
-  per the swagger and source (not called).
-- **A full read-modify-write is safe, apart from the race *(source)*.** Writing
-  back the complete, unfiltered set from a GET, with one entry changed, leaves
-  exactly that set. An unchanged `elevator_group_name` does not touch the elevator
-  service. There is no version check, though: anything written between the GET and
-  the PUT is lost. A GET narrowed by `property_name(s)` written back deletes the
-  rest, and every row gets a new `last_modified_at`. PATCH avoids all three.
+  filters equipment by property, so read in bulk (narrowed by equipment type where
+  you can) and filter client-side rather than calling the sub-resource once per
+  unit. Send `limit` and `start_index` together (see *Paging* below), or the list
+  silently stops at 25.
+- **`value`** is a JSON string, number or boolean. A string and a boolean come back
+  as written (`"True"` stays a string), and `3.5` as a number; integers were not
+  tested and may come back as `3.0` (the swagger types numbers as double). A list is
+  a 400.
+- **`PATCH` is the only partial write.** It upserts the properties sent and keeps the
+  rest; `value: null` deletes that one. It returns only the properties it wrote, not
+  the full set, so don't treat the response as a read-back. Duplicate names in one
+  request are a 400.
+- **`POST` and `PUT` replace every property.** POST is labelled "create", but after
+  three PATCHed properties a POST with one left only that one. PUT does the same
+  per the swagger and source (not called live). Writing back the complete,
+  unfiltered set from a GET with one entry changed is safe, apart from the race:
+  there is no version check, so anything written between the GET and the write is
+  lost, and a GET narrowed by `property_name(s)` written back deletes the rest.
 - **`DELETE` removes all properties.** The response is
   `{"status": "success", "data": {"equipment_properties": {"deleted": true}}}`.
-- **Equipment writes can wipe properties *(source)*.** `POST /equipment` and the PUT
-  equipment endpoints accept `equipment_properties`. Any non-null value, including
-  `[]`, replaces every property. Omit the key from equipment writes.
-- **Lifts:** removing or changing `elevator_group_name` on elevator-type equipment
-  also rewrites the lift's group in the elevator service *(source)*. POST, PUT,
-  DELETE and equipment writes all remove it. On a lift, use only `PATCH`, and never
-  send that property.
+- **Equipment writes can wipe properties *(source)*.** The equipment POSTs
+  (`/equipment`, `/sites/{site_id}/equipment`, `/collectors/{collector_id}/equipment`,
+  which update existing equipment when `equipment_id` is set) and PUTs accept
+  `equipment_properties`. Any non-null value, including `[]`, replaces every
+  property. Omit the key from equipment writes. In a batch, every item carries the
+  key or none does; a mix is rejected.
+- **Lifts *(source)*:** on equipment of type code `ELVTR`, a write that sets,
+  changes or removes `elevator_group_name` also rewrites the lift's group in the
+  elevator service. A PATCH carrying the property rewrites it even when the value is
+  unchanged. A full write-back with it unchanged does not; DELETE, or a POST, PUT or
+  equipment write that leaves it out, removes the group. Change a lift's group only
+  on purpose, with a PATCH carrying just that property, and leave it out of other
+  PATCHes.
 
 ## History export: the chain from names to samples
 

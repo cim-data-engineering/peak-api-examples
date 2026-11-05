@@ -187,6 +187,12 @@ accepted as a name, and there is no web UI and no audit trail.
 - **`POST` replaces every property**, despite being labelled "create": after three
   PATCHed properties, a POST with one left only that one. `PUT` also replaces all,
   per the swagger and source (not called).
+- **A full read-modify-write is safe, apart from the race *(source)*.** Writing
+  back the complete, unfiltered set from a GET, with one entry changed, leaves
+  exactly that set. An unchanged `elevator_group_name` does not touch the elevator
+  service. There is no version check, though: anything written between the GET and
+  the PUT is lost. A GET narrowed by `property_name(s)` written back deletes the
+  rest, and every row gets a new `last_modified_at`. PATCH avoids all three.
 - **`DELETE` removes all properties.** The response is
   `{"status": "success", "data": {"equipment_properties": {"deleted": true}}}`.
 - **Equipment writes can wipe properties *(source)*.** `POST /equipment` and the PUT

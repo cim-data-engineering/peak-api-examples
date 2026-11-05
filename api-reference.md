@@ -160,6 +160,43 @@ the catalogue is `P1M`, the API answers 400
 with `start_ts` and `end_ts`.
 - There is no GraphQL query for meter rollups. Use this endpoint.
 
+## Equipment properties (`/equipment/{equipment_id}/properties`, core)
+
+Verified 2026-11-05 with the CIM service account: reads on CIM lifts, and writes on
+one demo supply fan, which was left with no properties. Partner-tenant tokens were
+not tested, so read the properties back after any write. Points marked *(source)*
+come from the platform source, not a live call.
+
+Properties are typed key/value pairs per equipment, added in May 2026 for elevators.
+On 2026-11-05 the only name in use was `elevator_group_name`. Any string is
+accepted as a name, and there is no web UI and no audit trail.
+
+- **Read:** `GET /equipment/{equipment_id}/properties` returns
+  `data.equipment_properties: [{property_name, value}]`. `property_name` or
+  `property_names` narrows it.
+- **Bulk read:** the equipment GETs (`/equipment`, `/sites/{site_id}/equipment`,
+  `/collectors/{collector_id}/equipment`, and their single-item forms) include
+  properties only with `select_properties=true`. Without it the key is absent.
+  GraphQL has `Equipment.equipment_properties { property_name value }`. Nothing
+  filters equipment by property, so read in bulk and filter client-side rather
+  than calling the sub-resource once per unit.
+- **`value`** is a JSON string, number or boolean, and comes back as the same type
+  (`"True"` stays a string). A list is a 400.
+- **`PATCH` is the only safe write.** It upserts the properties sent and keeps the
+  rest; `value: null` deletes that one. Duplicate names in one request are a 400.
+- **`POST` replaces every property**, despite being labelled "create": after three
+  PATCHed properties, a POST with one left only that one. `PUT` also replaces all,
+  per the swagger and source (not called).
+- **`DELETE` removes all properties.** The response is
+  `{"status": "success", "data": {"equipment_properties": {"deleted": true}}}`.
+- **Equipment writes can wipe properties *(source)*.** `POST /equipment` and the PUT
+  equipment endpoints accept `equipment_properties`. Any non-null value, including
+  `[]`, replaces every property. Omit the key from equipment writes.
+- **Lifts:** removing or changing `elevator_group_name` on elevator-type equipment
+  also rewrites the lift's group in the elevator service *(source)*. POST, PUT,
+  DELETE and equipment writes all remove it. On a lift, use only `PATCH`, and never
+  send that property.
+
 ## History export: the chain from names to samples
 
 Verified against the live endpoints, 2026-08-21, building

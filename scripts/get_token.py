@@ -28,6 +28,7 @@ written out as a curl command.
 """
 
 import getpass
+import sys
 
 import httpx
 
@@ -72,18 +73,30 @@ def login(username: str, password: str, totp: str = "") -> str:
     return response.json()["refresh_token"]
 
 
+def prompt(text: str) -> str:
+    """Read a line, writing the prompt to stderr.
+
+    input() writes its prompt to stdout, so `get_token.py > file` would send the
+    prompts into the file and leave the terminal waiting with nothing on screen.
+    Only the token goes to stdout.
+    """
+    print(text, end="", file=sys.stderr, flush=True)
+    return input()
+
+
 def main() -> None:
-    username = input("PEAK username: ")
+    username = prompt("PEAK username: ")
 
     # getpass reads without echoing, so the password stays off the screen and out
-    # of scrollback. There is deliberately no --password option: anything passed
-    # as an argument lands in shell history and in the process list.
-    password = getpass.getpass(f"Password for {username}: ")
+    # of scrollback. Pasting works; nothing is shown. There is deliberately no
+    # --password option: anything passed as an argument lands in shell history
+    # and in the process list.
+    password = getpass.getpass(f"Password for {username} (not shown): ", stream=sys.stderr)
 
     # Optional: press Enter to skip it if the account has no MFA. Codes last 30
     # seconds, so read yours immediately before pressing Enter -- an expired code
     # fails exactly like a wrong password.
-    totp = input("TOTP code (press Enter if the account has no MFA): ").strip()
+    totp = prompt("TOTP code (press Enter if the account has no MFA): ").strip()
 
     # Printing the token is the point of this script, but treat it like a
     # password: it authenticates as you until it is revoked. Keep it out of

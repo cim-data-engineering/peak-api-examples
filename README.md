@@ -42,8 +42,10 @@ else and it still runs.
 uv run scripts/get_token.py
 ```
 
-It prompts for your PEAK username, your password (not echoed), and a code at a
-prompt reading `TOTP code`.
+It prompts for your PEAK username, your password (not echoed; pasting works), and
+a code at a prompt reading `TOTP code`. The prompts go to stderr and only the token
+to stdout, so `uv run scripts/get_token.py > token.txt` shows every prompt and
+writes just the token.
 
 **That last prompt only applies if PEAK asks you for a six-digit code when you
 sign in.** If your PEAK login is username and password alone, press Enter to skip
